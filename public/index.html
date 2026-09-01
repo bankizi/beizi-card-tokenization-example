@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bancada de testes de cartão — Be.izi</title>
+    <meta
+      name="description"
+      content="Exemplo oficial de uso do SDK @be.izi/card-tokenization: tokeniza no navegador e roda os cenários de cartão em homologação."
+    />
+    <link rel="icon" type="image/svg+xml" href="/brand/beizi-simbolo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Signika:wght@400;500;600&display=swap"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img src="/brand/be-izi-gradiant.png" alt="Be.izi" />
+        <span class="brand-divider"></span>
+        <span class="brand-label">Bancada de testes de cartão</span>
+      </div>
+      <div class="topbar-status">
+        <span id="auth-badge" class="badge badge-off">sem credenciais</span>
+        <button id="btn-test-auth" class="btn btn-ghost" type="button">Testar autenticação</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <img class="hero-mark" src="/brand/beizi-simbolo.svg" alt="" aria-hidden="true" />
+      <div class="hero-inner">
+        <p class="eyebrow">Homologação · exemplo de integração</p>
+        <h1>Teste o fluxo de cartão <span class="accent">com o SDK de tokenização</span></h1>
+        <p>
+          Esta bancada é o exemplo executável do <code>@be.izi/card-tokenization</code>. Ela percorre
+          os cenários de cartão em homologação no mesmo desenho da integração real — e mostra, passo
+          a passo, o que foi enviado e o que voltou.
+        </p>
+
+        <div class="hero-steps">
+          <div class="hero-step">
+            <b>1 · Tokeniza no navegador</b>
+            <span>O SDK troca o cartão por um token. O PAN não passa pelo seu backend.</span>
+          </div>
+          <div class="hero-step">
+            <b>2 · Transação pelo servidor</b>
+            <span>O processo local guarda o <code>client_secret</code> e assina a chamada.</span>
+          </div>
+          <div class="hero-step">
+            <b>3 · Confere o desfecho</b>
+            <span>Cada passo aparece com latência, corpo enviado e resposta.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <main>
+      <!-- ─── Credenciais ─────────────────────────────────────────────── -->
+      <details id="credentials-panel" class="panel" open>
+        <summary>
+          <span class="step-number">1</span>
+          <h2>Credenciais</h2>
+          <span class="hint">Ficam no processo local. O segredo nunca volta para a página.</span>
+        </summary>
+        <div class="panel-body grid-2">
+          <label>
+            <span>URL base da API</span>
+            <input id="baseUrl" type="text" placeholder="https://api-hom.exemplo.com.br" autocomplete="off" />
+          </label>
+          <label>
+            <span>Client ID</span>
+            <input id="clientId" type="text" autocomplete="off" />
+          </label>
+          <label>
+            <span>Client Secret</span>
+            <input id="clientSecret" type="password" autocomplete="off" placeholder="fica só no servidor local" />
+          </label>
+          <label>
+            <span>x-target-account-id <em>(opcional)</em></span>
+            <input id="targetAccountId" type="text" autocomplete="off" />
+          </label>
+          <label class="span-2">
+            <span>Chave de tokenização <em>(usada no navegador pelo SDK)</em></span>
+            <input id="tokenizationKey" type="password" autocomplete="off" />
+          </label>
+          <label class="span-2">
+            <span>Caminho da criação de transação</span>
+            <input id="createPath" type="text" value="/v1/card/transactions/create" />
+            <small
+              >O serviço usa versionamento por URI. Se o seu gateway remover o prefixo, troque para
+              <code>/card/transactions/create</code>.</small
+            >
+          </label>
+          <div class="span-2 row">
+            <button id="btn-save-credentials" class="btn btn-primary" type="button">Salvar credenciais</button>
+            <span id="credentials-feedback" class="feedback"></span>
+          </div>
+        </div>
+      </details>
+
+      <!-- ─── Cenário ─────────────────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="step-number">2</span>
+          <h2>Cenário</h2>
+          <span class="hint">O cartão escolhe a autorização; os centavos escolhem o detalhe.</span>
+        </div>
+        <div class="panel-body">
+          <h3>Autorização — pelo último dígito do cartão</h3>
+          <div id="authorization-grid" class="card-grid"></div>
+
+          <div id="detail-block">
+            <h3 id="detail-title">Recebíveis — pelos centavos</h3>
+            <div id="detail-grid" class="chip-grid"></div>
+          </div>
+
+          <div class="grid-3 form-row">
+            <label>
+              <span>Valor (reais inteiros)</span>
+              <input id="majorUnits" type="number" min="1" value="300" />
+            </label>
+            <label>
+              <span>Parcelas</span>
+              <input id="installments" type="number" min="1" max="12" value="3" />
+            </label>
+            <label>
+              <span>Capturar na criação</span>
+              <select id="capture">
+                <option value="true">sim</option>
+                <option value="false">não (pré-autorização)</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="amount-preview">
+            <span>Valor final</span>
+            <strong id="amount-preview">—</strong>
+            <code id="amount-cents">—</code>
+          </div>
+          <p id="prediction" class="prediction">—</p>
+        </div>
+      </section>
+
+      <!-- ─── Execução ────────────────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="step-number">3</span>
+          <h2>Executar</h2>
+          <span class="hint">Tokenização no navegador, transação pelo proxy.</span>
+        </div>
+        <div class="panel-body">
+          <div class="row wrap">
+            <button id="btn-run" class="btn btn-primary" type="button">Tokenizar e criar transação</button>
+            <button id="btn-tokenize-only" class="btn" type="button">Só tokenizar</button>
+            <button id="btn-run-sweep" class="btn" type="button">Rodar todos os recebíveis</button>
+            <button id="btn-clear" class="btn btn-ghost" type="button">Limpar histórico</button>
+          </div>
+          <p class="hint" id="run-hint">
+            A varredura roda os nove cenários de recebível em sequência, com o cartão que aprova.
+          </p>
+        </div>
+      </section>
+
+      <!-- ─── Resultados ──────────────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="step-number">4</span>
+          <h2>Histórico</h2>
+          <span class="hint" id="history-count">nenhuma execução ainda</span>
+        </div>
+        <div id="history" class="history"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Be.izi · ambiente de homologação</span>
+      <span>Dados sintéticos apenas — não use cartões reais.</span>
+      <span>SDK: <code>@be.izi/card-tokenization</code></span>
+    </footer>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

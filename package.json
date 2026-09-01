@@ -1,0 +1,21 @@
+{
+  "name": "beizi-card-tokenization-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Exemplo executável do SDK @be.izi/card-tokenization: bancada local para testar o fluxo de cartão em homologação.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bankizi/beizi-card-tokenization-example.git"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@be.izi/card-tokenization": "^0.1.1"
+  }
+}
