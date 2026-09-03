@@ -485,6 +485,11 @@ button:focus-visible,
   color: #611a15;
 }
 
+.badge-warn {
+  background: #fff4e5;
+  color: #663c00;
+}
+
 .feedback {
   font-size: 12.5px;
   color: var(--muted);
@@ -785,6 +790,116 @@ pre {
   flex-wrap: wrap;
 }
 
+/* ─── Desfecho, motivo e identificadores ───────────────────────────────────── */
+
+.chip-tag {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--muted);
+}
+
+.chip.is-highlight .chip-tag {
+  background: #fff4e5;
+  color: #663c00;
+}
+
+.reason {
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reason-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.reason-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.reason-message {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.reason-caption,
+.reason-fields {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.reason-meta,
+.identifiers {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.reason-meta dt,
+.identifiers dt {
+  color: var(--muted);
+}
+
+.reason-meta dd,
+.identifiers dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.identifiers {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.diagnostics summary {
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.diagnostics pre {
+  margin-top: 6px;
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+}
+
+/* O aviso que impede a cobrança dupla. Vermelho de propósito: não é informação, é bloqueio. */
+.undetermined {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--err);
+  background: #fdecea;
+  color: #611a15;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ─── Rodapé ───────────────────────────────────────────────────────────────── */
 
 .footer {
@@ -850,4 +965,77 @@ pre {
 
 #detail-block {
   margin-top: 10px;
+}
+
+/* ─── Consulta avulsa e webhook ─────────────────────────────────────────────── */
+
+.lookup-result:empty {
+  display: none;
+}
+
+.lookup-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: 13px;
+}
+
+.webhook-url {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+}
+
+.webhook-url code {
+  /* O endereço é para copiar e colar no cadastro do webhook: quebra em qualquer largura em vez de
+     empurrar o painel para os lados. */
+  overflow-wrap: anywhere;
+  flex: 1 1 240px;
+}
+
+.webhook-events {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.webhook-events:empty::after {
+  content: 'Nenhum evento ainda. Rode um cenário com o túnel cadastrado e ele aparece aqui.';
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.webhook-event {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.webhook-event > summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.webhook-event > pre {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  background: var(--code-bg);
+  color: var(--code-text);
+  font-size: 12px;
+  line-height: 1.5;
 }

@@ -165,10 +165,63 @@
         </div>
       </section>
 
-      <!-- ─── Resultados ──────────────────────────────────────────────── -->
+      <!-- ─── Consulta avulsa ─────────────────────────────────────────── -->
       <section class="panel">
         <div class="panel-head">
           <span class="step-number">4</span>
+          <h2>Consultar transação</h2>
+          <span class="hint">Qualquer identificador, inclusive de outra sessão.</span>
+        </div>
+        <div class="panel-body">
+          <div class="row wrap">
+            <label class="field grow">
+              <span>Identificador</span>
+              <input id="lookupIdentifier" type="text" autocomplete="off"
+                placeholder="transactionId, orderId, tid, integrationId ou externalId" />
+            </label>
+            <button id="btn-lookup" class="btn btn-primary" type="button">Consultar</button>
+          </div>
+          <p class="hint">
+            A consulta aceita os cinco identificadores. É o caminho obrigatório depois de um desfecho
+            indeterminado — e o único que responde o que de fato aconteceu com a cobrança.
+          </p>
+          <div id="lookup-result" class="lookup-result"></div>
+        </div>
+      </section>
+
+      <!-- ─── Webhook ─────────────────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="step-number">5</span>
+          <h2>Webhook</h2>
+          <span class="hint" id="webhook-count">nenhum evento recebido</span>
+        </div>
+        <div class="panel-body">
+          <div class="row wrap">
+            <label class="field grow">
+              <span>Endereço público do túnel</span>
+              <input id="tunnelUrl" type="text" autocomplete="off" placeholder="https://xxxx.ngrok-free.app" />
+            </label>
+            <button id="btn-detect-tunnel" class="btn" type="button">Detectar ngrok</button>
+            <button id="btn-clear-webhooks" class="btn btn-ghost" type="button">Limpar eventos</button>
+          </div>
+          <div class="webhook-url">
+            <span class="hint">Cadastre esta URL como destino do webhook de transação:</span>
+            <code id="webhook-url">—</code>
+            <button id="btn-copy-webhook" class="btn btn-ghost" type="button">Copiar</button>
+          </div>
+          <p class="hint">
+            A bancada responde <code>200</code> na hora e só registra o que chegou. Um evento que casa
+            com uma execução do histórico aparece nos dois lugares.
+          </p>
+          <div id="webhook-events" class="webhook-events"></div>
+        </div>
+      </section>
+
+      <!-- ─── Resultados ──────────────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="step-number">6</span>
           <h2>Histórico</h2>
           <span class="hint" id="history-count">nenhuma execução ainda</span>
         </div>

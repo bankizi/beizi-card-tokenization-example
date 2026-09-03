@@ -33,6 +33,19 @@ const credentials = {
 
 let cachedToken = null;
 
+/**
+ * Eventos de webhook recebidos, os mais recentes primeiro, com teto fixo.
+ *
+ * Vivem em memória e morrem com o processo, como as credenciais: a bancada não persiste nada. O
+ * teto existe porque este endpoint fica **exposto na internet** quando você abre um túnel — qualquer
+ * um com a URL consegue postar nele. Guardar sem limite transformaria isso numa forma trivial de
+ * derrubar o processo.
+ */
+const webhookEvents = [];
+const WEBHOOK_EVENTS_MAX = 50;
+const WEBHOOK_BODY_MAX_BYTES = 256 * 1024;
+let webhookSeq = 0;
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -147,6 +160,75 @@ async function proxyApi({ method, path, body }) {
   return { status: response.status, ok: response.ok, latencyMs, body: parsed, url, method };
 }
 
+/**
+ * Recebe o webhook do cliente e devolve `200` imediatamente.
+ *
+ * Responder rápido é parte do contrato: a plataforma trata timeout e não-2xx como falha de entrega
+ * e reenvia. Por isso nada aqui valida payload, consulta a API ou escreve em disco — só registra e
+ * responde. O que a bancada faz com o evento acontece depois, na página.
+ */
+async function receiveWebhook(req, res) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > WEBHOOK_BODY_MAX_BYTES) {
+      res.writeHead(413).end();
+      return;
+    }
+    chunks.push(chunk);
+  }
+
+  const raw = Buffer.concat(chunks).toString('utf8');
+  let body = raw;
+  try {
+    body = raw ? JSON.parse(raw) : null;
+  } catch {
+    // corpo não-JSON: fica como texto, para a bancada mostrar exatamente o que chegou
+  }
+
+  webhookEvents.unshift({
+    id: ++webhookSeq,
+    receivedAt: new Date().toISOString(),
+    method: req.method,
+    path: req.url,
+    // Só os cabeçalhos que ajudam a depurar entrega. `authorization` fica de fora de propósito:
+    // se você assinar o webhook, o segredo não deve aparecer na tela nem no log da bancada.
+    headers: {
+      'content-type': req.headers['content-type'] ?? null,
+      'user-agent': req.headers['user-agent'] ?? null,
+      'x-correlation-id': req.headers['x-correlation-id'] ?? null,
+    },
+    body,
+  });
+  if (webhookEvents.length > WEBHOOK_EVENTS_MAX) webhookEvents.length = WEBHOOK_EVENTS_MAX;
+
+  sendJson(res, 200, { received: true });
+}
+
+/**
+ * Descobre a URL pública do túnel perguntando ao ngrok, que expõe uma API local em `4040`.
+ *
+ * Evita o passo mais fácil de errar: copiar a URL do terminal do ngrok à mão, colar com um path a
+ * mais e passar meia hora achando que o webhook não está sendo entregue. Sem ngrok rodando, a
+ * página cai no campo manual — qualquer túnel serve, a bancada só precisa da URL.
+ */
+async function detectTunnelUrl() {
+  try {
+    const response = await fetch('http://127.0.0.1:4040/api/tunnels', {
+      signal: AbortSignal.timeout(1200),
+    });
+    if (!response.ok) return null;
+
+    const parsed = await response.json();
+    const tunnel = parsed.tunnels?.find((item) => item.public_url?.startsWith('https://')) ?? parsed.tunnels?.[0];
+    return tunnel?.public_url ?? null;
+  } catch {
+    // ngrok não está rodando, ou expõe a API noutra porta: o campo manual resolve
+    return null;
+  }
+}
+
 async function serveStatic(req, res) {
   const requested = req.url === '/' ? '/index.html' : req.url.split('?')[0];
   const filePath = join(PUBLIC_DIR, normalize(requested).replace(/^(\.\.[/\\])+/, ''));
@@ -209,6 +291,30 @@ const server = createServer(async (req, res) => {
         return;
       }
       sendJson(res, 200, await proxyApi({ method: method ?? 'POST', path, body }));
+      return;
+    }
+
+    // Qualquer caminho sob `/webhook` serve, para você registrar a URL com o sufixo que quiser.
+    if (req.url?.startsWith('/webhook') && req.method === 'POST') {
+      await receiveWebhook(req, res);
+      return;
+    }
+
+    if (req.url?.startsWith('/api/webhooks') && req.method === 'GET') {
+      const after = Number(new URL(req.url, 'http://localhost').searchParams.get('after') ?? 0);
+      const events = webhookEvents.filter((event) => event.id > after);
+      sendJson(res, 200, { events, lastId: webhookEvents[0]?.id ?? after, path: '/webhook' });
+      return;
+    }
+
+    if (req.url === '/api/webhooks' && req.method === 'DELETE') {
+      webhookEvents.length = 0;
+      sendJson(res, 200, { cleared: true });
+      return;
+    }
+
+    if (req.url === '/api/tunnel' && req.method === 'GET') {
+      sendJson(res, 200, { tunnelUrl: await detectTunnelUrl() });
       return;
     }
 

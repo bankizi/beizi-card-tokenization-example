@@ -137,11 +137,10 @@ export const CREATE_FAILURE = [
 
 /**
  * Centavos que fazem falhar a operação **posterior** à criação. Escolhidos pelo valor usado na
- * criação, porque é dele que a captura e o cancelamento recuperam o cenário.
+ * criação, porque é dele que a captura recupera o cenário.
  */
 export const OPERATION_FAILURE = [
   { cents: '70', operation: 'capture', label: 'A captura falha', outcome: 'FAILED' },
-  { cents: '71', operation: 'cancel', label: 'O cancelamento fica indeterminado', outcome: 'UNKNOWN' },
 ];
 
 /** Centavos, quando a transação aprova: escolhem a trajetória dos recebíveis. */
