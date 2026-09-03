@@ -3,7 +3,8 @@
  *
  * Dois eixos que não se atropelam: o último dígito do cartão escolhe a autorização, e os centavos
  * do valor escolhem o detalhe — motivo da recusa quando recusa, trajetória dos recebíveis quando
- * aprova. Como só um desfecho acontece por transação, os centavos nunca significam as duas coisas.
+ * aprova, tipo da falha quando o cartão é o de erro. Como só um desfecho acontece por transação,
+ * os centavos nunca significam duas coisas ao mesmo tempo.
  */
 
 /** Cartões de teste, um por cenário de autorização. Todos Luhn-válidos e de BIN Visa. */
@@ -76,13 +77,21 @@ export const AUTHORIZATION = [
   {
     digit: '9',
     number: '4000000000000069',
-    label: 'Erro do provedor',
+    label: 'Falha na criação',
     outcome: 'erro',
-    detail: 'A criação falha. Serve para testar o caminho de erro.',
+    detail: 'O tipo da falha vem dos centavos.',
+    usesFailureCents: true,
   },
 ];
 
-/** Centavos, quando a transação recusa: viram o código do adquirente. */
+/**
+ * Centavos, quando a transação recusa.
+ *
+ * Os seis primeiros viram o código do adquirente. Os dois últimos trocam a **forma** da recusa: em
+ * vez de o emissor negar, a análise de fraude cancela — e o adquirente responde `00 / SUCESSO`,
+ * como um adquirente real faz nesse caso. É o cenário que prova por que se deve ler `reason`, e
+ * nunca `acquirerInfo.message`.
+ */
 export const DECLINE = [
   { cents: '05', label: 'Não autorizada' },
   { cents: '51', label: 'Saldo ou limite insuficiente' },
@@ -90,6 +99,49 @@ export const DECLINE = [
   { cents: '57', label: 'Transação não permitida' },
   { cents: '62', label: 'Cartão restrito' },
   { cents: '82', label: 'Código de segurança inválido' },
+  {
+    cents: '90',
+    label: 'Cancelada pela análise de fraude',
+    highlight: true,
+    note: 'Termina em CANCELED, e o adquirente responde 00/SUCESSO — leia o reason',
+  },
+  { cents: '91', label: 'Cancelada por lista de bloqueio', highlight: true, note: 'Termina em CANCELED' },
+];
+
+/**
+ * Centavos, com o cartão de final 9: escolhem como a criação falha.
+ *
+ * O `20` é o mais importante de exercitar — o pedido sai e a resposta nunca volta. A transação fica
+ * em aberto, a cobrança não aceita nova tentativa, e o desfecho só fecha quando a consulta ao
+ * provedor responde. É o que separa uma integração que perde transação de uma que não perde.
+ */
+export const CREATE_FAILURE = [
+  { cents: '00', label: 'Método de pagamento não habilitado', outcome: 'FAILED' },
+  { cents: '10', label: 'Requisição inválida', outcome: 'FAILED' },
+  {
+    cents: '20',
+    label: 'Sem resposta do provedor',
+    outcome: 'UNKNOWN',
+    highlight: true,
+    note: 'Não repita a cobrança; o desfecho é confirmado pela consulta',
+  },
+  {
+    cents: '30',
+    label: 'Adquirente não processou',
+    outcome: 'FAILED',
+    highlight: true,
+    note: 'A ordem existe no provedor, mas nasce morta',
+  },
+  { cents: '40', label: 'Provedor indisponível', outcome: 'FAILED' },
+];
+
+/**
+ * Centavos que fazem falhar a operação **posterior** à criação. Escolhidos pelo valor usado na
+ * criação, porque é dele que a captura e o cancelamento recuperam o cenário.
+ */
+export const OPERATION_FAILURE = [
+  { cents: '70', operation: 'capture', label: 'A captura falha', outcome: 'FAILED' },
+  { cents: '71', operation: 'cancel', label: 'O cancelamento fica indeterminado', outcome: 'UNKNOWN' },
 ];
 
 /** Centavos, quando a transação aprova: escolhem a trajetória dos recebíveis. */
